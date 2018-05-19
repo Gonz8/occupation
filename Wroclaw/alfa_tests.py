@@ -9,25 +9,32 @@ from sklearn.metrics import mean_squared_error
 
 from scipy.stats import pearsonr
 
-set_nr_path_prefix = "9/9"
+hotel_capacity = 178
+dta0 = 3
+dta4 = 2
+dta7 = 1
 
-X_train = np.loadtxt(set_nr_path_prefix+"_X_train.csv", delimiter=",")
-X_test = np.loadtxt(set_nr_path_prefix+"_X_test.csv", delimiter=",")
-y_train = np.loadtxt(set_nr_path_prefix+"_y_train.csv", delimiter=",")
-y_test = np.loadtxt(set_nr_path_prefix+"_y_test.csv", delimiter=",")
+predictDTA = dta0
 
-# X = np.loadtxt("occupationInputs.csv", delimiter=",")
-# y = np.loadtxt("occupationOutputs.csv", delimiter=",")
+# set_nr_path_prefix = "9/9"
 #
-# size = X.shape[0]
-# trainSize = int(round(size*0.8))
+# X_train = np.loadtxt(set_nr_path_prefix+"_X_train.csv", delimiter=",")
+# X_test = np.loadtxt(set_nr_path_prefix+"_X_test.csv", delimiter=",")
+# y_train = np.loadtxt(set_nr_path_prefix+"_y_train.csv", delimiter=",")
+# y_test = np.loadtxt(set_nr_path_prefix+"_y_test.csv", delimiter=",")
+
+X = np.loadtxt("occWroInputs.csv", delimiter=",", skiprows=1, usecols=[1,2,3,4,5,6,7])
+y = np.loadtxt("occWroOutputs.csv", delimiter=",", skiprows=1, usecols=[predictDTA])
 #
-# X_train = X[:trainSize,:]
-# X_test = X[trainSize:,:]
-# X_train = X_train[:-14,:]
-# y_train = y[:trainSize,]
-# y_test = y[trainSize:,]
-# y_train = y_train[:-14,]
+size = X.shape[0]
+trainSize = int(round(size*0.8))
+
+X_train = X[:trainSize,:]
+X_test = X[trainSize:,:]
+X_train = X_train[:-14,:]
+y_train = y[:trainSize,]
+y_test = y[trainSize:,]
+y_train = y_train[:-14,]
 
 pca = PCA(n_components=7)
 pca.fit(X_train)
@@ -37,7 +44,7 @@ print(pca.explained_variance_ratio_)
 X_train = pca.transform(X_train)
 X_test = pca.transform(X_test)
 
-mlp = MLPRegressor(hidden_layer_sizes=(3,3), max_iter=55000)
+mlp = MLPRegressor(hidden_layer_sizes=(5,5), max_iter=95000)
 
 scores = []
 errors = []

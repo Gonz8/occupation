@@ -8,15 +8,19 @@ from sklearn.decomposition import PCA
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import learning_curve
-from sklearn.model_selection import train_test_split
 
 from scipy.stats import pearsonr
 
-def save_train_test_dataset(set_nr, X_train, X_test, y_train, y_test):
-    numpy.savetxt(set_nr+"/"+set_nr+"_X_train.csv", X_train, fmt='%s', delimiter=",")
-    numpy.savetxt(set_nr+"/"+set_nr+"_X_test.csv", X_test, fmt='%s', delimiter=",")
-    numpy.savetxt(set_nr+"/"+set_nr+"_y_train.csv", y_train, fmt='%s', delimiter=",")
-    numpy.savetxt(set_nr+"/"+set_nr+"_y_test.csv", y_test, fmt='%s', delimiter=",")
+def doPCA(X_train, X_test, n_comp):
+    pca = PCA(n_components=n_comp)
+    pca.fit(X_train)
+
+    print("PCA explained variance ratio:")
+    print(pca.explained_variance_ratio_)
+
+    x_train_new = pca.transform(X_train)
+    x_test_new = pca.transform(X_test)
+    return x_train_new, x_test_new
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
                         n_jobs=1, train_sizes=numpy.linspace(.1, 1.0, 5)):
@@ -47,62 +51,28 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     plt.legend(loc="best")
     return plt
 
-
 hotel_capacity = 86
 
-dt='i3,i3,i3,i3,i3,i3,i3'
-dty='i3'
-X = numpy.loadtxt("occupationInputs.csv", delimiter=",")
-y = numpy.loadtxt("occupationOutputs.csv", delimiter=",")
+set_nr_path_prefix = "10/10"
 
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-#
-# print("MSE 14days feature as prediction (train):")
-# print(mean_squared_error(y_train,X_train[:,6]))
-# print("MSE 14days feature as prediction (test) : %s" % (mean_squared_error(y_test,X_test[:,6])))
-#
-# #size = X.shape[0]
-# print(X_train.shape)
-# print(X_test.shape)
-# save_train_test_dataset("10", X_train, X_test, y_train, y_test)
-# sys.exit()
-#
-#
+X_train = numpy.loadtxt(set_nr_path_prefix+"_X_train.csv", delimiter=",")
+X_test = numpy.loadtxt(set_nr_path_prefix+"_X_test.csv", delimiter=",")
+y_train = numpy.loadtxt(set_nr_path_prefix+"_y_train.csv", delimiter=",")
+y_test = numpy.loadtxt(set_nr_path_prefix+"_y_test.csv", delimiter=",")
 
-# seaborn.regplot(X[:,6], y)
-# plt.show()
-
-
-size = X.shape[0]
-trainSize = int(round(size*0.8))
-# print(X[0])
-# sys.exit()
-
-X_train = X[:trainSize,:]
-X_test = X[trainSize:,:]
-X_train = X_train[:-14,:]
-y_train = y[:trainSize,]
-y_test = y[trainSize:,]
-y_train = y_train[:-14,]
-
-# set_nr_path_prefix = "4/4"
-# X_test = numpy.loadtxt(set_nr_path_prefix+"_X_test.csv", delimiter=",")
-# y_test = numpy.loadtxt(set_nr_path_prefix+"_y_test.csv", delimiter=",")
-
-#X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2)
-
+print("train and test array shape:")
 print(X_train.shape)
 print(X_test.shape)
-# sys.exit()
 
-print("Correlation przed PCA feature/target")
-print(pearsonr(X_train[:,0],y_train))
-print(pearsonr(X_train[:,1],y_train))
-print(pearsonr(X_train[:,2],y_train))
-print(pearsonr(X_train[:,3],y_train))
-print(pearsonr(X_train[:,4],y_train))
-print(pearsonr(X_train[:,5],y_train))
-print(pearsonr(X_train[:,6],y_train))
+
+# print("Correlation przed PCA feature/target")
+# print(pearsonr(X_train[:,0],y_train))
+# print(pearsonr(X_train[:,1],y_train))
+# print(pearsonr(X_train[:,2],y_train))
+# print(pearsonr(X_train[:,3],y_train))
+# print(pearsonr(X_train[:,4],y_train))
+# print(pearsonr(X_train[:,5],y_train))
+# print(pearsonr(X_train[:,6],y_train))
 
 print("MSE 14days feature as prediction (train):")
 print(mean_squared_error(y_train,X_train[:,6]))
@@ -113,19 +83,14 @@ y_train_onlymean = numpy.zeros(y_train.shape[0])
 y_train_onlymean[:] = m_y_train
 print("MSE (mean from y_train) as prediction  : %s" % (mean_squared_error(y_train,y_train_onlymean)))
 
-pca = PCA(n_components=7)
-pca.fit(X_train)
-
-print(pca.explained_variance_ratio_)
-
-X_train = pca.transform(X_train)
-X_test = pca.transform(X_test)
+X_train, X_test = doPCA(X_train, X_test, 7)
 
 start_time = time.time()
 mlp = MLPRegressor(hidden_layer_sizes=(3,3), max_iter=80000, verbose=False, alpha=0.00009, learning_rate_init=0.0001, tol=0.00001)
 mlp.fit(X_train, y_train)
 print("--- %s seconds ---" % (time.time() - start_time))
 
+print("train loss: %s" % (mlp.loss_))
 
 predictions = mlp.predict(X_test)
 
@@ -135,7 +100,7 @@ map = rmse/hotel_capacity
 
 print("MSE : %s" % (mse))
 print("RMSE : %s" % (rmse))
-print("Main avarage prediction:")
+print("Main average prediction:")
 print(map)
 
 mean_val = numpy.mean(y_train)
@@ -158,7 +123,7 @@ print(corr)
 # print(pearsonr(X_train[:,4],y_train))
 # print(pearsonr(X_train[:,5],y_train))
 # print(pearsonr(X_train[:,6],y_train))
-0.0001
+#0.0001
 
 #train_sizes, train_scores, valid_scores = learning_curve(mlp, X, y, train_sizes=[50, 80, 110], cv=5)
 

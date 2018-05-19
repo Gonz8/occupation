@@ -48,12 +48,17 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     return plt
 
 
-hotel_capacity = 86
+hotel_capacity = 178
+dta0 = 3
+dta4 = 2
+dta7 = 1
 
-dt='i3,i3,i3,i3,i3,i3,i3'
-dty='i3'
-X = numpy.loadtxt("occupationInputs.csv", delimiter=",")
-y = numpy.loadtxt("occupationOutputs.csv", delimiter=",")
+predictDTA = dta0
+
+# dt='a10,i4,i4,i4,i4,i4,i4,i4'
+# dty='a10,i4,i4,i4'
+X = numpy.loadtxt("occWroInputs.csv", delimiter=",", skiprows=1, usecols=[1,2,3,4,5,6,7])
+y = numpy.loadtxt("occWroOutputs.csv", delimiter=",", skiprows=1, usecols=[predictDTA])
 
 # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 #
@@ -72,11 +77,8 @@ y = numpy.loadtxt("occupationOutputs.csv", delimiter=",")
 # seaborn.regplot(X[:,6], y)
 # plt.show()
 
-
 size = X.shape[0]
 trainSize = int(round(size*0.8))
-# print(X[0])
-# sys.exit()
 
 X_train = X[:trainSize,:]
 X_test = X[trainSize:,:]
@@ -122,7 +124,7 @@ X_train = pca.transform(X_train)
 X_test = pca.transform(X_test)
 
 start_time = time.time()
-mlp = MLPRegressor(hidden_layer_sizes=(3,3), max_iter=80000, verbose=False, alpha=0.00009, learning_rate_init=0.0001, tol=0.00001)
+mlp = MLPRegressor(hidden_layer_sizes=(5,5), max_iter=80000, verbose=False, alpha=0.38, learning_rate_init=0.0001, tol=0.00001)
 mlp.fit(X_train, y_train)
 print("--- %s seconds ---" % (time.time() - start_time))
 
@@ -163,5 +165,5 @@ print(corr)
 #train_sizes, train_scores, valid_scores = learning_curve(mlp, X, y, train_sizes=[50, 80, 110], cv=5)
 
 title = "Learning Curves"
-# plot_learning_curve(mlp, title, X, y, cv=5, n_jobs=4)
-# plt.show()
+plot_learning_curve(mlp, title, X, y, cv=5, n_jobs=4)
+plt.show()
