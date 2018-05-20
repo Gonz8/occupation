@@ -31,13 +31,20 @@ class occupationMLPRegressor:
             self.hotelCapacity = hotelCapacity
 
     def loadData(self):
+        dtm = 'a10, float, float, float, float, float, float, float'
         X = numpy.loadtxt(self.inputFile, delimiter=",", skiprows=1, usecols=[1, 2, 3, 4, 5, 6, 7])
         y = numpy.loadtxt(self.outputFile, delimiter=",", skiprows=1, usecols=[self.predictDTA])
         print("X Shape:")
         print(X.shape)
-        return X, y
+        print(X[0])
 
-    def trainTestSplit(self, X, y):
+        dt ='a10'
+        Xdates = numpy.loadtxt(self.inputFile, delimiter=",", skiprows=1, dtype=dt, usecols=[0])
+        print(Xdates.shape)
+        print(Xdates[0])
+        return X, y, Xdates
+
+    def trainTestSplit(self, X, y, dates):
         if self.randomSamples:
             return train_test_split(X, y, test_size=0.2)
         size = X.shape[0]
@@ -49,13 +56,19 @@ class occupationMLPRegressor:
         y_train = y[:trainSize, ]
         y_test = y[trainSize:, ]
         y_train = y_train[:-14, ]
-        return X_train,X_test,y_train,y_test
 
-    def trainTestSplitWithPrint(self, X, y):
-        X_train, X_test, y_train, y_test = self.trainTestSplit(X,y)
+        trainDates = dates[:trainSize]
+        trainDates = trainDates[:-14]
+        testDates = dates[trainSize:]
+        return X_train,X_test,y_train,y_test, trainDates, testDates
+
+    def trainTestSplitWithPrint(self, X, y, dates):
+        X_train, X_test, y_train, y_test, trainDates, testDates = self.trainTestSplit(X,y,dates)
         print("X train SIZE : %d" % (X_train.shape[0]))
         print("X test SIZE : %d" % (X_test.shape[0]))
-        return X_train, X_test, y_train, y_test
+        print("trainDates SIZE : %d" % (trainDates.shape[0]))
+        print("testDates SIZE : %d" % (testDates.shape[0]))
+        return X_train, X_test, y_train, y_test, trainDates, testDates
 
     def correlationPrint(self, X_train, y_train):
         print("Correlation feature/target:")
@@ -112,15 +125,31 @@ class occupationMLPRegressor:
         print("MSE mean : %s" % (mean_squared_error(y_test_mean, predictions)))
 
     def execute(self):
-        X, y = self.loadData()
-        X_train, X_test, y_train, y_test = self.trainTestSplitWithPrint(X, y)
+        X, y, Xdates = self.loadData()
+        X_train, X_test, y_train, y_test, trainDates, testDates  = self.trainTestSplitWithPrint(X, y, Xdates)
         self.correlationPrint(X_train, y_train)
         self.MSEbeforePrint(X_train, X_test, y_train, y_test)
 
         X_train, X_test = self.doPCA(X_train, X_test)
         predictions = self.trainPredict(X_train, X_test, y_train)
         self.predictErrorsPrint(predictions, y_train, y_test)
-        return predictions, y_train
+        return testDates, predictions, y_test
 
-occMLP = occupationMLPRegressor("occWroInputs.csv","occWroOutputs.csv",dta0, (5,5), 0.38);
-occMLP.execute()
+    def executeAndReturnPredictDiff(self):
+        dates, predictions, realValues = self.execute()
+        dateToDiff = {}
+        for idx, date in enumerate(dates):
+            pred = predictions[idx]
+            real = realValues[idx]
+            diff = real - pred
+            dateToDiff[date] = diff
+            # print(date,diff)
+        return dateToDiff
+
+
+def main():
+    occMLP = occupationMLPRegressor("occWroInputs.csv","occWroOutputs.csv", dta0, (5,5), 0.38)
+    occMLP.executeAndReturnPredictDiff()
+
+if __name__ == '__main__':
+    main()

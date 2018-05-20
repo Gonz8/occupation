@@ -16,7 +16,7 @@ def lpmnProcess(text):
     for word in array:
         if word not in words:
             words.append(word)
-    return words
+    return array
     # data = {'lpmn':lpmn,'user':user,'text':text}
     # doc = json.dumps(data)
     # resp = urllib2.urlopen(urllib2.Request(nlprestURL,doc,{'Content-Type': 'application/xml'})).read()
@@ -38,13 +38,14 @@ def lpmnProcessSingle(text):
     data = {'lpmn':lpmn,'user':user,'text':text}
     doc = json.dumps(data)
     resp = urllib2.urlopen(urllib2.Request(nlprestURL,doc,{'Content-Type': 'application/xml'})).read()
+    # print(resp)
     result = ET.fromstring(resp)
     for sentence in result.iter('sentence'):
         for tok in sentence.findall('tok'):
             lex = tok.find('lex')
             base = lex.find('base').text
             ctag = lex.find('ctag').text
-            if ctag == 'interp' or ctag == 'conj' or 'prep:' in ctag:
+            if ctag == 'interp' or ctag == 'conj' or 'prep:' in ctag or 'adj:' in ctag:
                 continue
             if base not in array:
                 array.append(base)
@@ -82,23 +83,29 @@ def expandEventsFilteredWithClarin():
         firstDay = i[0]
         lastDay = i[1]
         event = i[2]
-        wordsArray = lpmnProcessSingle(event)
+        wordsArray = lpmnProcess(event)
         wordsString = ".".join(wordsArray)
         sample.append(firstDay)
         sample.append(lastDay)
         sample.append(event.decode('utf-8'))
         sample.append(wordsString)
-        samples.append(sample)
+        if wordsString != "":
+            samples.append(sample)
         sample = []
+
+        print(k, event)
         k+=1
-        if k == 140:
-            break
+        # if k == 401:
+        #     break
 
     print(len(samples))
     np.savetxt("eventsWroFilteredClarin.csv", np.asarray(samples), fmt='%s', delimiter=",")
 
+    np.savetxt("newInputs0.csv", np.asarray(words), fmt='%s', delimiter=",")
+
 def main():
     expandEventsFilteredWithClarin()
+    # print(lpmnProcess("Ala posiada przystojnego kota w kotu Estudiantes Twin Peaks ENEMEF Borussia"))
 
 if __name__ == '__main__':
     main()
