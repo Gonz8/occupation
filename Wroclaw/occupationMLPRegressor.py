@@ -90,7 +90,7 @@ class occupationMLPRegressor:
         y_train_onlymean[:] = m_y_train
         print("MSE (mean from y_train) as prediction  : %s" % (mean_squared_error(y_train, y_train_onlymean)))
 
-    def doPCA(self, X_train, X_test):
+    def doPCA(self, X_train, X_test, X, allSet = False):
         PCAComp = X_train.shape[1]
         pca = PCA(n_components=PCAComp)
         pca.fit(X_train)
@@ -99,13 +99,19 @@ class occupationMLPRegressor:
 
         X_train = pca.transform(X_train)
         X_test = pca.transform(X_test)
-        return X_train, X_test
+        if allSet:
+            X = pca.transform(X)
+        return X_train, X_test, X
 
     def trainPredict(self, X_train, X_test, y_train):
         start_time = time.time()
         self.mlp.fit(X_train, y_train)
         print("--- %s seconds ---" % (time.time() - start_time))
         predictions = self.mlp.predict(X_test)
+        # print(predictions)
+        predictions = numpy.asarray([self.hotelCapacity if p > self.hotelCapacity else p for p in predictions])
+        # print(predictions)
+        # print(predictions.shape)
         return predictions
 
     def predictErrorsPrint(self, predictions, y_train, y_test):
@@ -124,27 +130,39 @@ class occupationMLPRegressor:
 
         print("MSE mean : %s" % (mean_squared_error(y_test_mean, predictions)))
 
-    def execute(self):
+    def execute(self, allSet = False, maxCap = True):
         X, y, Xdates = self.loadData()
         X_train, X_test, y_train, y_test, trainDates, testDates  = self.trainTestSplitWithPrint(X, y, Xdates)
         self.correlationPrint(X_train, y_train)
         self.MSEbeforePrint(X_train, X_test, y_train, y_test)
 
-        X_train, X_test = self.doPCA(X_train, X_test)
-        predictions = self.trainPredict(X_train, X_test, y_train)
-        self.predictErrorsPrint(predictions, y_train, y_test)
-        return testDates, predictions, y_test
+        X_train, X_test, X = self.doPCA(X_train, X_test, X, allSet)
+        if allSet:
+            Xpred = X
+            ypred = y
+            datespred = Xdates
+        else:
+            Xpred = X_test
+            ypred = y_test
+            datespred = testDates
+        predictions = self.trainPredict(X_train, Xpred, y_train)
+        self.predictErrorsPrint(predictions, y_train, ypred)
+        return datespred, predictions, ypred
 
-    def executeAndReturnPredictDiff(self):
-        dates, predictions, realValues = self.execute()
+    def executeAndReturnPredictDiff(self, allSet = False):
+        dates, predictions, realValues = self.execute(allSet)
         dateToDiff = {}
+        dateToPred = {}
+        dateToRealVal = {}
         for idx, date in enumerate(dates):
             pred = predictions[idx]
             real = realValues[idx]
             diff = real - pred
             dateToDiff[date] = diff
+            dateToPred[date] = pred
+            dateToRealVal[date] = real
             # print(date,diff)
-        return dateToDiff
+        return dateToDiff, dateToPred, dateToRealVal
 
 
 def main():

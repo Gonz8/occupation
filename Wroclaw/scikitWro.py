@@ -165,5 +165,5 @@ print(corr)
 #train_sizes, train_scores, valid_scores = learning_curve(mlp, X, y, train_sizes=[50, 80, 110], cv=5)
 
 title = "Learning Curves"
-plot_learning_curve(mlp, title, X, y, cv=5, n_jobs=4)
-plt.show()
+# plot_learning_curve(mlp, title, X, y, cv=5, n_jobs=4)
+# plt.show()
